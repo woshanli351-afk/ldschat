@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChatMessage } from "@/lib/messages";
 
@@ -18,6 +18,42 @@ const POLL_INTERVAL_MS = 2000;
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString("zh-CN", { hour12: false });
+}
+
+function renderBoldMarkdown(content: string) {
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  let key = 0;
+
+  while (cursor < content.length) {
+    const open = content.indexOf("**", cursor);
+    if (open === -1) {
+      nodes.push(content.slice(cursor));
+      break;
+    }
+
+    const close = content.indexOf("**", open + 2);
+    if (close === -1) {
+      nodes.push(content.slice(cursor));
+      break;
+    }
+
+    if (open > cursor) {
+      nodes.push(content.slice(cursor, open));
+    }
+
+    const boldText = content.slice(open + 2, close);
+    if (boldText.length === 0) {
+      nodes.push("****");
+    } else {
+      nodes.push(<strong key={`bold-${key}`}>{boldText}</strong>);
+      key += 1;
+    }
+
+    cursor = close + 2;
+  }
+
+  return nodes.length > 0 ? nodes : content;
 }
 
 export default function ChatClient({
@@ -270,7 +306,7 @@ export default function ChatClient({
                     </button>
                   </div>
                 ) : (
-                  <p className="message-content">{message.content}</p>
+                  <p className="message-content">{renderBoldMarkdown(message.content)}</p>
                 )}
 
                 <div className="message-footer">
